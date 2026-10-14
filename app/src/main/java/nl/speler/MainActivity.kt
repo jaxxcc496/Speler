@@ -148,6 +148,14 @@ private fun PlayerApp(context: Context, player: Player) {
     var accentIndex by remember { mutableIntStateOf(prefs.getInt("accent", 0).coerceIn(0, 3)) }
     var compactRows by remember { mutableStateOf(prefs.getBoolean("compactRows", false)) }
     var showMiniPlayer by remember { mutableStateOf(prefs.getBoolean("miniPlayer", true)) }
+    var fontScale by remember { mutableFloatStateOf(prefs.getFloat("fontScale", 1f).coerceIn(0.85f, 1.3f)) }
+    var backgroundIndex by remember { mutableIntStateOf(prefs.getInt("backgroundIndex", 0).coerceIn(0, 2)) }
+    var logoGlyph by remember { mutableStateOf(prefs.getString("logoGlyph", "♫") ?: "♫") }
+    val backgroundOptions = listOf(
+        listOf(Color(0xFF151025), Bg, Color(0xFF08070E)),
+        listOf(Color(0xFF101B2A), Color(0xFF080D15), Color(0xFF05080D)),
+        listOf(Color(0xFF10221D), Color(0xFF090F0D), Color(0xFF050907))
+    )
     val accentOptions = listOf(Color(0xFF9B5CFF), Color(0xFF4D8DFF), Color(0xFF31C99A), Color(0xFFFF9A45))
     val accentAltOptions = listOf(Color(0xFFEF5DCE), Color(0xFF55D8F2), Color(0xFFB4F36B), Color(0xFFFF5F7A))
     val uiAccent = accentOptions[accentIndex]
@@ -226,13 +234,13 @@ private fun PlayerApp(context: Context, player: Player) {
     }
 
     Column(
-        Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF151025), Bg, Color(0xFF08070E)))).padding(horizontal = 18.dp).then(if (tab >= 3) Modifier.verticalScroll(rememberScrollState()) else Modifier),
+        Modifier.fillMaxSize().background(Brush.verticalGradient(backgroundOptions[backgroundIndex])).padding(horizontal = 18.dp).then(if (tab != 1) Modifier.verticalScroll(rememberScrollState()) else Modifier),
         verticalArrangement = Arrangement.spacedBy(13.dp)
     ) {
         Spacer(Modifier.height(10.dp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(Modifier.size(48.dp).clip(RoundedCornerShape(16.dp)).background(Brush.linearGradient(listOf(uiAccent, uiAccentAlt))), contentAlignment = Alignment.Center) {
-                Text("♫", color = Color.White, fontSize = 29.sp, fontWeight = FontWeight.Bold)
+                Text(logoGlyph, color = Color.White, fontSize = 29.sp, fontWeight = FontWeight.Bold)
             }
             Column(Modifier.weight(1f)) {
                 Text("S P E L E R", color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 2.sp)
@@ -314,9 +322,9 @@ private fun PlayerApp(context: Context, player: Player) {
                     if (playlist.songs.isEmpty()) {
                         EmptyCard("Playlist is leeg", "Voeg je eigen audiobestanden toe om ze hier te zien.")
                     } else {
-                        Text("NUMMERS IN DEZE PLAYLIST", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
+                        Text("NUMMERS IN DEZE PLAYLIST • ${visibleSongs.size}", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
                         LazyColumn(
-                            Modifier.weight(1f),
+                            Modifier.fillMaxWidth().heightIn(max = 480.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             itemsIndexed(visibleSongs) { _, entry ->
@@ -331,7 +339,7 @@ private fun PlayerApp(context: Context, player: Player) {
                                         Modifier.weight(1f).clickable { play(playlist.songs, i) },
                                         verticalArrangement = Arrangement.spacedBy(2.dp)
                                     ) {
-                                        Text(song.title, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text(song.title, color = Color.White, fontSize = (13 * fontScale).sp, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                         Text("Tik om af te spelen", color = Muted, fontSize = 10.sp)
                                     }
                                     TextButton(
@@ -361,7 +369,7 @@ private fun PlayerApp(context: Context, player: Player) {
                     if (playlists.isEmpty()) {
                         EmptyCard("Nog geen playlists", "Maak hierboven een playlist om te beginnen.")
                     } else {
-                        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        LazyColumn(Modifier.fillMaxWidth().heightIn(max = 480.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             itemsIndexed(playlists) { i, playlist ->
                                 Row(
                                     Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp))
@@ -370,10 +378,10 @@ private fun PlayerApp(context: Context, player: Player) {
                                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     Box(Modifier.size(54.dp).clip(RoundedCornerShape(14.dp)).background(Brush.linearGradient(listOf(uiAccent.copy(alpha = .8f), uiAccentAlt.copy(alpha = .6f)))), contentAlignment = Alignment.Center) {
-                                        Text("♫", color = Color.White, fontSize = 27.sp)
+                                        Text(logoGlyph, color = Color.White, fontSize = 27.sp)
                                     }
                                     Column(Modifier.weight(1f)) {
-                                        Text(playlist.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                        Text(playlist.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = (15 * fontScale).sp)
                                         Text("${playlist.songs.size} nummers", color = Muted, fontSize = 12.sp)
                                     }
                                     TextButton(onClick = { selected = i; play(playlist.songs, 0) }, enabled = playlist.songs.isNotEmpty()) { Text("▶", color = uiAccent, fontSize = 20.sp) }
@@ -394,7 +402,7 @@ private fun PlayerApp(context: Context, player: Player) {
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Box(Modifier.size(174.dp).clip(RoundedCornerShape(34.dp)).background(Brush.linearGradient(listOf(uiAccent, Color(0xFF4D2D91), uiAccentAlt))), contentAlignment = Alignment.Center) {
-                            Text("♫", color = Color.White, fontSize = 100.sp, fontWeight = FontWeight.Light)
+                            Text(logoGlyph, color = Color.White, fontSize = 100.sp, fontWeight = FontWeight.Light)
                         }
                         Text("SPOTLIGHT", color = Color.White.copy(alpha = .6f), fontSize = 10.sp, letterSpacing = 4.sp)
                     }
@@ -457,7 +465,6 @@ private fun PlayerApp(context: Context, player: Player) {
                     shape = RoundedCornerShape(14.dp)
                 ) { Text("＋ Muziek kiezen van telefoon") }
                 Text("Tip: bestanden die je downloadt vind je in de app Mijn bestanden > Downloads.", color = Muted, fontSize = 12.sp)
-                Spacer(Modifier.weight(1f))
             }
             3 -> {
                 Text("MAAK HET VAN JOU", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
@@ -502,6 +509,38 @@ private fun PlayerApp(context: Context, player: Player) {
                         showMiniPlayer = it
                         prefs.edit().putBoolean("miniPlayer", it).apply()
                     })
+                }
+                HorizontalDivider(color = Panel2)
+                Text("GEAVANCEERDE WEERGAVE", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
+                Text("Achtergrond", color = Color.White, fontWeight = FontWeight.SemiBold)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("Paars nacht", "Blauw nacht", "Groen nacht").forEachIndexed { index, label ->
+                        FilterChip(
+                            selected = backgroundIndex == index,
+                            onClick = { backgroundIndex = index; prefs.edit().putInt("backgroundIndex", index).apply() },
+                            label = { Text(label, fontSize = 10.sp) }
+                        )
+                    }
+                }
+                Text("Tekstgrootte", color = Color.White, fontWeight = FontWeight.SemiBold)
+                Slider(
+                    value = fontScale,
+                    onValueChange = { fontScale = it; prefs.edit().putFloat("fontScale", it).apply() },
+                    valueRange = 0.85f..1.3f,
+                    steps = 8
+                )
+                Text("Voorbeeld van tekst • ${(fontScale * 100).toInt()}%", color = Muted, fontSize = (12 * fontScale).sp)
+                Text("APP-LOGO IN DE APP", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
+                Text("Kies een symbool voor de kop, speler en playlist-kaarten.", color = Color.White, fontSize = 12.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
+                    listOf("♫", "♪", "🎧", "★", "⚡", "♥", "◉", "☾").forEach { glyph ->
+                        Box(
+                            Modifier.size(42.dp).clip(RoundedCornerShape(12.dp))
+                                .background(if (logoGlyph == glyph) Panel2 else Panel)
+                                .clickable { logoGlyph = glyph; prefs.edit().putString("logoGlyph", glyph).apply() },
+                            contentAlignment = Alignment.Center
+                        ) { Text(glyph, color = if (logoGlyph == glyph) uiAccentAlt else Color.White, fontSize = 22.sp) }
+                    }
                 }
                 HorizontalDivider(color = Panel2)
                 Text("SLAAPTIMER", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
@@ -568,7 +607,10 @@ private fun PlayerApp(context: Context, player: Player) {
                     showMiniPlayer = true
                     sleepTimerMinutes = 0
                     sleepTimerRunning = false
-                    prefs.edit().putInt("accent", 0).putBoolean("compactRows", false).putBoolean("miniPlayer", true).putInt("sleepTimerMinutes", 0).apply()
+                    fontScale = 1f
+                    backgroundIndex = 0
+                    logoGlyph = "♫"
+                    prefs.edit().putInt("accent", 0).putBoolean("compactRows", false).putBoolean("miniPlayer", true).putInt("sleepTimerMinutes", 0).putFloat("fontScale", 1f).putInt("backgroundIndex", 0).putString("logoGlyph", "♫").apply()
                     message = "Standaardinstellingen hersteld"
                 }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) { Text("Herstel standaardinstellingen") }
                 Spacer(Modifier.height(8.dp))

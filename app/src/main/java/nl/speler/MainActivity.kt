@@ -1,5 +1,6 @@
 package nl.speler
 
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -30,7 +31,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -43,17 +47,44 @@ private val Muted = Color(0xFFAAA4BD)
 
 data class Song(val title: String, val uri: String)
 data class Playlist(val name: String, val songs: List<Song>)
+data class CustomCard(val title: String, val description: String)
+data class CustomTab(val name: String, val cards: List<CustomCard>)
 
 class MainActivity : ComponentActivity() {
-    private lateinit var player: ExoPlayer
+    private var controllerFuture: com.google.common.util.concurrent.ListenableFuture<MediaController>? = null
+    private var controller: MediaController? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        player = ExoPlayer.Builder(this).build()
-        setContent { MaterialTheme(colorScheme = darkColorScheme(
-            primary = Purple, secondary = Pink, background = Bg, surface = Panel
-        )) { PlayerApp(this, player) } }
+        setContent {
+            MaterialTheme(colorScheme = darkColorScheme(primary = Purple, secondary = Pink, background = Bg, surface = Panel)) {
+                Box(Modifier.fillMaxSize().background(Bg), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Purple)
+                }
+            }
+        }
+        val token = SessionToken(this, ComponentName(this, PlayerService::class.java))
+        val future = MediaController.Builder(this, token).buildAsync()
+        controllerFuture = future
+        future.addListener({
+            try {
+                controller = future.get()
+                setContent {
+                    MaterialTheme(colorScheme = darkColorScheme(primary = Purple, secondary = Pink, background = Bg, surface = Panel)) {
+                        controller?.let { PlayerApp(this, it) }
+                    }
+                }
+            } catch (_: Exception) {
+                setContent { MaterialTheme { Text("De speler kon niet starten. Sluit de app en probeer opnieuw.") } }
+            }
+        }, mainExecutor)
     }
-    override fun onDestroy() { player.release(); super.onDestroy() }
+
+    override fun onDestroy() {
+        controllerFuture?.let { MediaController.releaseFuture(it) }
+        controller = null
+        super.onDestroy()
+    }
 }
 
 private fun titleFor(context: Context, uri: Uri): String = try {
@@ -69,7 +100,7 @@ private fun timeText(ms: Long): String {
 }
 
 @Composable
-private fun PlayerApp(context: Context, player: ExoPlayer) {
+private fun PlayerApp(context: Context, player: Player) {
     val prefs = remember { context.getSharedPreferences("speler", Context.MODE_PRIVATE) }
     fun loadLists(): List<Playlist> = try {
         val a = JSONArray(prefs.getString("playlists", "[]"))

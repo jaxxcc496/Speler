@@ -3,6 +3,7 @@ package nl.speler
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
@@ -151,6 +152,7 @@ private fun PlayerApp(context: Context, player: Player) {
     var fontScale by remember { mutableFloatStateOf(prefs.getFloat("fontScale", 1f).coerceIn(0.85f, 1.3f)) }
     var backgroundIndex by remember { mutableIntStateOf(prefs.getInt("backgroundIndex", 0).coerceIn(0, 2)) }
     var logoGlyph by remember { mutableStateOf(prefs.getString("logoGlyph", "♫") ?: "♫") }
+    var launcherIconIndex by remember { mutableIntStateOf(prefs.getInt("launcherIconIndex", 0).coerceIn(0, 2)) }
     val backgroundOptions = listOf(
         listOf(Color(0xFF151025), Bg, Color(0xFF08070E)),
         listOf(Color(0xFF101B2A), Color(0xFF080D15), Color(0xFF05080D)),
@@ -160,6 +162,25 @@ private fun PlayerApp(context: Context, player: Player) {
     val accentAltOptions = listOf(Color(0xFFEF5DCE), Color(0xFF55D8F2), Color(0xFFB4F36B), Color(0xFFFF5F7A))
     val uiAccent = accentOptions[accentIndex]
     val uiAccentAlt = accentAltOptions[accentIndex]
+
+    fun changeLauncherIcon(index: Int) {
+        val aliases = listOf(".MainActivityPurple", ".MainActivityBlue", ".MainActivityGreen")
+        try {
+            aliases.forEachIndexed { aliasIndex, alias ->
+                val component = android.content.ComponentName(context.packageName, context.packageName + alias)
+                context.packageManager.setComponentEnabledSetting(
+                    component,
+                    if (aliasIndex == index) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                    PackageManager.DONT_KILL_APP
+                )
+            }
+            launcherIconIndex = index
+            prefs.edit().putInt("launcherIconIndex", index).apply()
+            message = "App-icoon aangepast. Soms duurt het even voordat je startscherm vernieuwt."
+        } catch (_: Exception) {
+            message = "Het startscherm kon de icoon niet direct aanpassen."
+        }
+    }
 
     fun save() {
         val a = JSONArray()
@@ -530,6 +551,25 @@ private fun PlayerApp(context: Context, player: Player) {
                     steps = 8
                 )
                 Text("Voorbeeld van tekst • ${(fontScale * 100).toInt()}%", color = Muted, fontSize = (12 * fontScale).sp)
+                Text("ICOON OP JE STARTSCHERM", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
+                Text("Verander het pictogram van Speler op je telefoon.", color = Color.White, fontSize = 12.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    listOf("Paars", "Blauw", "Groen").forEachIndexed { index, label ->
+                        Column(
+                            Modifier.weight(1f).clip(RoundedCornerShape(14.dp))
+                                .background(if (launcherIconIndex == index) Panel2 else Panel)
+                                .clickable { changeLauncherIcon(index) }.padding(10.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(listOf(Color(0xFF6F35C7), Color(0xFF1769D2), Color(0xFF148A62))[index]), contentAlignment = Alignment.Center) {
+                                Text("♫", color = Color.White, fontSize = 25.sp)
+                            }
+                            Text(label, color = Color.White, fontSize = 11.sp)
+                            if (launcherIconIndex == index) Text("Gekozen ✓", color = uiAccentAlt, fontSize = 10.sp)
+                        }
+                    }
+                }
                 Text("APP-LOGO IN DE APP", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
                 Text("Kies een symbool voor de kop, speler en playlist-kaarten.", color = Color.White, fontSize = 12.sp)
                 Row(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -610,6 +650,7 @@ private fun PlayerApp(context: Context, player: Player) {
                     fontScale = 1f
                     backgroundIndex = 0
                     logoGlyph = "♫"
+                    changeLauncherIcon(0)
                     prefs.edit().putInt("accent", 0).putBoolean("compactRows", false).putBoolean("miniPlayer", true).putInt("sleepTimerMinutes", 0).putFloat("fontScale", 1f).putInt("backgroundIndex", 0).putString("logoGlyph", "♫").apply()
                     message = "Standaardinstellingen hersteld"
                 }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) { Text("Herstel standaardinstellingen") }

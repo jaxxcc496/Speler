@@ -211,6 +211,19 @@ private fun PlayerApp(context: Context, player: Player) {
         })
     }
 
+    LaunchedEffect(sleepTimerRunning, sleepTimerMinutes) {
+        if (sleepTimerRunning && sleepTimerMinutes > 0) {
+            kotlinx.coroutines.delay(sleepTimerMinutes * 60_000L)
+            player.pause()
+            player.stop()
+            playing = false
+            sleepTimerRunning = false
+            currentTitle = "Kies een nummer"
+            currentUri = ""
+            message = "Slaaptimer: muziek gestopt"
+        }
+    }
+
     Column(
         Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF151025), Bg, Color(0xFF08070E)))).padding(horizontal = 18.dp).then(if (tab >= 3) Modifier.verticalScroll(rememberScrollState()) else Modifier),
         verticalArrangement = Arrangement.spacedBy(13.dp)
@@ -518,18 +531,6 @@ private fun PlayerApp(context: Context, player: Player) {
                 ) { Text(if (sleepTimerRunning) "Timer opnieuw starten" else "Start slaaptimer") }
                 if (sleepTimerRunning) {
                     TextButton(onClick = { sleepTimerRunning = false; message = "Slaaptimer geannuleerd" }) { Text("Timer annuleren") }
-                }
-                LaunchedEffect(sleepTimerRunning, sleepTimerMinutes) {
-                    if (sleepTimerRunning && sleepTimerMinutes > 0) {
-                        kotlinx.coroutines.delay(sleepTimerMinutes * 60_000L)
-                        player.pause()
-                        player.stop()
-                        playing = false
-                        sleepTimerRunning = false
-                        currentTitle = "Kies een nummer"
-                        currentUri = ""
-                        message = "Slaaptimer: muziek gestopt"
-                    }
                 }
                 HorizontalDivider(color = Panel2)
                 Text("EIGEN TABBLADEN", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)

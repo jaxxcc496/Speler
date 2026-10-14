@@ -136,7 +136,7 @@ private fun translateUi(text: String, language: String): String {
         "Zoek een nummer" to "Search for a song",
         "Playlist is leeg" to "Playlist is empty",
         "Voeg je eigen audiobestanden toe om ze hier te zien." to "Add your own audio files to see them here.",
-        "NUMMERS IN DEZE PLAYLIST • ${visibleSongs.size}" to "SONGS IN THIS PLAYLIST • ${visibleSongs.size}",
+        "NUMMERS IN DEZE PLAYLIST • \${visibleSongs.size}" to "SONGS IN THIS PLAYLIST • \${visibleSongs.size}",
         " tik om af te spelen" to " tap to play",
         "Tik om af te spelen" to "Tap to play",
         "Nummer verwijderd" to "Song deleted",
@@ -173,7 +173,7 @@ private fun translateUi(text: String, language: String): String {
         "Blauw nacht" to "Blue night",
         "Groen nacht" to "Green night",
         "Tekstgrootte" to "Text size",
-        "Voorbeeld van tekst • ${(fontScale * 100).toInt()}%" to "Text preview • ${(fontScale * 100).toInt()}%",
+        "Voorbeeld van tekst • \${(fontScale * 100).toInt()}%" to "Text preview • \${(fontScale * 100).toInt()}%",
         "ICOON OP JE STARTSCHERM" to "HOME SCREEN ICON",
         "Verander het pictogram van Speler op je telefoon." to "Change the Speler app icon on your phone.",
         "Gekozen ✓" to "Selected ✓",
@@ -182,7 +182,7 @@ private fun translateUi(text: String, language: String): String {
         "SLAAPTIMER" to "SLEEP TIMER",
         "Stop muziek automatisch" to "Stop music automatically",
         "Uit" to "Off",
-        "Muziek stopt over $sleepTimerMinutes minuten" to "Music stops in $sleepTimerMinutes minutes",
+        "Muziek stopt over \$sleepTimerMinutes minuten" to "Music stops in \$sleepTimerMinutes minutes",
         "Kies eerst een tijd" to "Choose a time first",
         "Timer opnieuw starten" to "Restart timer",
         "Start slaaptimer" to "Start sleep timer",
@@ -194,7 +194,7 @@ private fun translateUi(text: String, language: String): String {
         "Eigen tabblad aangemaakt" to "Custom tab created",
         "Kies een unieke naam voor het tabblad" to "Choose a unique name for the tab",
         "＋ Tabblad toevoegen" to "＋ Add tab",
-        "${customTabs.size} eigen tabblad(en) • tik bovenaan om ze te openen" to "${customTabs.size} custom tab(s) • tap above to open",
+        "\${customTabs.size} eigen tabblad(en) • tik bovenaan om ze te openen" to "\${customTabs.size} custom tab(s) • tap above to open",
         "Standaardinstellingen hersteld" to "Default settings restored",
         "Herstel standaardinstellingen" to "Restore default settings",
         "JOUW EIGEN RUIMTE" to "YOUR OWN SPACE",
@@ -241,7 +241,7 @@ private fun translateUi(text: String, language: String): String {
         "Zoek een nummer" to "ابحث عن أغنية",
         "Playlist is leeg" to "قائمة التشغيل فارغة",
         "Voeg je eigen audiobestanden toe om ze hier te zien." to "أضف ملفاتك الصوتية لتظهر هنا.",
-        "NUMMERS IN DEZE PLAYLIST • ${visibleSongs.size}" to "الأغاني في قائمة التشغيل • ${visibleSongs.size}",
+        "NUMMERS IN DEZE PLAYLIST • \${visibleSongs.size}" to "الأغاني في قائمة التشغيل • \${visibleSongs.size}",
         " tik om af te spelen" to " اضغط للتشغيل",
         "Tik om af te spelen" to "اضغط للتشغيل",
         "Nummer verwijderd" to "تم حذف الأغنية",
@@ -278,7 +278,7 @@ private fun translateUi(text: String, language: String): String {
         "Blauw nacht" to "ليلة زرقاء",
         "Groen nacht" to "ليلة خضراء",
         "Tekstgrootte" to "حجم النص",
-        "Voorbeeld van tekst • ${(fontScale * 100).toInt()}%" to "معاينة النص • ${(fontScale * 100).toInt()}%",
+        "Voorbeeld van tekst • \${(fontScale * 100).toInt()}%" to "معاينة النص • \${(fontScale * 100).toInt()}%",
         "ICOON OP JE STARTSCHERM" to "أيقونة الشاشة الرئيسية",
         "Verander het pictogram van Speler op je telefoon." to "غيّر أيقونة تطبيق Speler على هاتفك.",
         "Gekozen ✓" to "تم الاختيار ✓",
@@ -287,7 +287,7 @@ private fun translateUi(text: String, language: String): String {
         "SLAAPTIMER" to "مؤقّت النوم",
         "Stop muziek automatisch" to "إيقاف الموسيقى تلقائيًا",
         "Uit" to "إيقاف",
-        "Muziek stopt over $sleepTimerMinutes minuten" to "ستتوقف الموسيقى بعد $sleepTimerMinutes دقيقة",
+        "Muziek stopt over \$sleepTimerMinutes minuten" to "ستتوقف الموسيقى بعد \$sleepTimerMinutes دقيقة",
         "Kies eerst een tijd" to "اختر وقتًا أولًا",
         "Timer opnieuw starten" to "إعادة تشغيل المؤقّت",
         "Start slaaptimer" to "بدء مؤقّت النوم",
@@ -299,7 +299,7 @@ private fun translateUi(text: String, language: String): String {
         "Eigen tabblad aangemaakt" to "تم إنشاء علامة تبويب مخصصة",
         "Kies een unieke naam voor het tabblad" to "اختر اسمًا فريدًا لعلامة التبويب",
         "＋ Tabblad toevoegen" to "＋ إضافة علامة تبويب",
-        "${customTabs.size} eigen tabblad(en) • tik bovenaan om ze te openen" to "${customTabs.size} علامة تبويب مخصصة • اضغط أعلاه لفتحها",
+        "\${customTabs.size} eigen tabblad(en) • tik bovenaan om ze te openen" to "\${customTabs.size} علامة تبويب مخصصة • اضغط أعلاه لفتحها",
         "Standaardinstellingen hersteld" to "تمت استعادة الإعدادات الافتراضية",
         "Herstel standaardinstellingen" to "استعادة الإعدادات الافتراضية",
         "JOUW EIGEN RUIMTE" to "مساحتك الخاصة",
@@ -324,6 +324,10 @@ private fun translateUi(text: String, language: String): String {
             else -> text
         }
         "ar" -> arabic[text] ?: when {
+            text.startsWith("NUMMERS IN DEZE PLAYLIST • ") -> "SONGS IN THIS PLAYLIST • " + text.substringAfter(" • ")
+            text.startsWith("Muziek stopt over ") -> "Music stops in " + text.removePrefix("Muziek stopt over ").removeSuffix(" minuten") + " minutes"
+            text.startsWith("NUMMERS IN DEZE PLAYLIST • ") -> "الأغاني في قائمة التشغيل • " + text.substringAfter(" • ")
+            text.startsWith("Muziek stopt over ") -> "ستتوقف الموسيقى بعد " + text.removePrefix("Muziek stopt over ").removeSuffix(" minuten") + " دقيقة"
             text.startsWith("Playlist aangemaakt") -> "تم إنشاء قائمة التشغيل"
             text.startsWith("Playlist verwijderd") -> "تم حذف قائمة التشغيل"
             text.contains(" nummer(s) toegevoegd aan ") -> text.substringBefore(" nummer(s)") + " أغنية تمت إضافتها إلى " + text.substringAfter(" toegevoegd aan ")

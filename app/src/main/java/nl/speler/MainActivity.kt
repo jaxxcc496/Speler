@@ -212,7 +212,7 @@ private fun PlayerApp(context: Context, player: Player) {
     }
 
     Column(
-        Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF151025), Bg, Color(0xFF08070E)))).padding(horizontal = 18.dp),
+        Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF151025), Bg, Color(0xFF08070E)))).padding(horizontal = 18.dp).then(if (tab >= 3) Modifier.verticalScroll(rememberScrollState()) else Modifier),
         verticalArrangement = Arrangement.spacedBy(13.dp)
     ) {
         Spacer(Modifier.height(10.dp))
@@ -569,7 +569,7 @@ private fun PlayerApp(context: Context, player: Player) {
                     prefs.edit().putInt("accent", 0).putBoolean("compactRows", false).putBoolean("miniPlayer", true).putInt("sleepTimerMinutes", 0).apply()
                     message = "Standaardinstellingen hersteld"
                 }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) { Text("Herstel standaardinstellingen") }
-                Spacer(Modifier.weight(1f))
+                Spacer(Modifier.height(8.dp))
             }
             else -> {
                 val customIndex = tab - 4
@@ -620,7 +620,7 @@ private fun PlayerApp(context: Context, player: Player) {
                     if (customTab.cards.isEmpty()) {
                         EmptyCard("Begin met iets maken", "Maak hier notities, ideeën, lijstjes of projectkaartjes.")
                     } else {
-                        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                        LazyColumn(Modifier.heightIn(max = 320.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
                             itemsIndexed(customTab.cards) { cardIndex, card ->
                                 Row(
                                     Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Panel).padding(14.dp),

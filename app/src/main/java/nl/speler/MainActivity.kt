@@ -1,11 +1,9 @@
 package nl.speler
 
-import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.os.Environment
 import android.provider.OpenableColumns
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -90,8 +88,6 @@ private fun PlayerApp(context: Context, player: ExoPlayer) {
     var currentUri by remember { mutableStateOf("") }
     var playing by remember { mutableStateOf(false) }
     var newName by remember { mutableStateOf("") }
-    var link by remember { mutableStateOf("") }
-    var youtubeUrl by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("Welkom terug") }
     var shuffle by remember { mutableStateOf(false) }
     var repeat by remember { mutableStateOf(false) }
@@ -99,6 +95,14 @@ private fun PlayerApp(context: Context, player: ExoPlayer) {
     var position by remember { mutableFloatStateOf(0f) }
     var duration by remember { mutableLongStateOf(0L) }
     var playerRevision by remember { mutableIntStateOf(0) }
+    var searchQuery by remember { mutableStateOf("") }
+    var accentIndex by remember { mutableIntStateOf(prefs.getInt("accent", 0).coerceIn(0, 3)) }
+    var compactRows by remember { mutableStateOf(prefs.getBoolean("compactRows", false)) }
+    var showMiniPlayer by remember { mutableStateOf(prefs.getBoolean("miniPlayer", true)) }
+    val accentOptions = listOf(Color(0xFF9B5CFF), Color(0xFF4D8DFF), Color(0xFF31C99A), Color(0xFFFF9A45))
+    val accentAltOptions = listOf(Color(0xFFEF5DCE), Color(0xFF55D8F2), Color(0xFFB4F36B), Color(0xFFFF5F7A))
+    val uiAccent = accentOptions[accentIndex]
+    val uiAccentAlt = accentAltOptions[accentIndex]
 
     fun save() {
         val a = JSONArray()
@@ -143,35 +147,6 @@ private fun PlayerApp(context: Context, player: ExoPlayer) {
         tab = 1
         playerRevision++
     }
-    fun downloadAudio(urlText: String) {
-        val url = urlText.trim()
-        if (!(url.startsWith("https://") || url.startsWith("http://"))) {
-            message = "Plak eerst een geldige HTTP(S)-link."
-            return
-        }
-        if (url.contains("youtube.com") || url.contains("youtu.be")) {
-            message = "YouTube-video's kunnen niet rechtstreeks via deze knop als audiobestand worden gedownload. Gebruik een directe link naar een audio bestand waarvoor je toestemming hebt."
-            return
-        }
-        try {
-            val uri = Uri.parse(url)
-            var filename = uri.lastPathSegment?.substringBefore('?')?.takeIf { it.isNotBlank() } ?: "speler-audio"
-            filename = filename.replace(Regex("[^A-Za-z0-9._ -]"), "_").take(120)
-            val request = DownloadManager.Request(uri)
-                .setTitle(filename)
-                .setDescription("Gedownload met Speler")
-                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
-                .setAllowedOverMetered(true)
-                .setAllowedOverRoaming(false)
-            val manager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-            manager.enqueue(request)
-            message = "Download gestart. Je vindt het bestand straks in Mijn bestanden > Downloads."
-        } catch (_: Exception) {
-            message = "Download niet gestart. Controleer de link en probeer opnieuw."
-        }
-    }
-
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         add(uris.map { uri ->
             try { context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) } catch (_: Exception) {}
@@ -185,7 +160,7 @@ private fun PlayerApp(context: Context, player: ExoPlayer) {
     ) {
         Spacer(Modifier.height(10.dp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Box(Modifier.size(48.dp).clip(RoundedCornerShape(16.dp)).background(Brush.linearGradient(listOf(Purple, Pink))), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(48.dp).clip(RoundedCornerShape(16.dp)).background(Brush.linearGradient(listOf(uiAccent, uiAccentAlt))), contentAlignment = Alignment.Center) {
                 Text("♫", color = Color.White, fontSize = 29.sp, fontWeight = FontWeight.Bold)
             }
             Column(Modifier.weight(1f)) {
@@ -198,10 +173,10 @@ private fun PlayerApp(context: Context, player: ExoPlayer) {
         }
 
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color(0xAA171426)).padding(4.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-            listOf("Bibliotheek", "Speler", "YouTube", "Downloads").forEachIndexed { i, label ->
+            listOf("Bibliotheek", "Speler", "Downloads", "Instellingen").forEachIndexed { i, label ->
                 Box(
                     Modifier.weight(1f).clip(RoundedCornerShape(12.dp))
-                        .background(if (tab == i) Brush.linearGradient(listOf(Purple, Color(0xFF7343D6))) else Brush.linearGradient(listOf(Panel, Panel)))
+                        .background(if (tab == i) Brush.linearGradient(listOf(uiAccent, Color(0xFF7343D6))) else Brush.linearGradient(listOf(Panel, Panel)))
                         .clickable { tab = i }.padding(vertical = 12.dp),
                     contentAlignment = Alignment.Center
                 ) { Text(label, color = if (tab == i) Color.White else Muted, fontSize = 10.sp, fontWeight = if (tab == i) FontWeight.Bold else FontWeight.Medium, maxLines = 1) }
@@ -215,7 +190,7 @@ private fun PlayerApp(context: Context, player: ExoPlayer) {
                         Text("JOUW MUZIEK", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
                         Text("Bibliotheek", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
                     }
-                    Text("${playlists.sumOf { it.songs.size }} tracks", color = Purple, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text("${playlists.sumOf { it.songs.size }} tracks", color = uiAccent, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(newName, { newName = it }, modifier = Modifier.weight(1f), label = { Text("Nieuwe playlist") }, singleLine = true, shape = RoundedCornerShape(14.dp))
@@ -251,6 +226,20 @@ private fun PlayerApp(context: Context, player: ExoPlayer) {
                             shape = RoundedCornerShape(12.dp)
                         ) { Text("Verwijder") }
                     }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = { play(playlist.songs, 0) }, enabled = playlist.songs.isNotEmpty(), shape = RoundedCornerShape(12.dp)) { Text("▶ Alles afspelen", fontSize = 11.sp) }
+                        OutlinedButton(onClick = { play(playlist.songs.shuffled(), 0) }, enabled = playlist.songs.isNotEmpty(), shape = RoundedCornerShape(12.dp)) { Text("⤨ Willekeurig", fontSize = 11.sp) }
+                    }
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Zoek een nummer") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(14.dp)
+                    )
+                    val visibleSongs = playlist.songs.mapIndexed { originalIndex, song -> originalIndex to song }
+                        .filter { it.second.title.contains(searchQuery, ignoreCase = true) }
                     if (playlist.songs.isEmpty()) {
                         EmptyCard("Playlist is leeg", "Voeg je eigen audiobestanden toe om ze hier te zien.")
                     } else {
@@ -259,13 +248,14 @@ private fun PlayerApp(context: Context, player: ExoPlayer) {
                             Modifier.weight(1f),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            itemsIndexed(playlist.songs) { i, song ->
+                            itemsIndexed(visibleSongs) { _, entry ->
+                                val (i, song) = entry
                                 Row(
-                                    Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Panel).padding(10.dp),
+                                    Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Panel).padding(if (compactRows) 6.dp else 10.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Text("${i + 1}", color = Purple, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(22.dp))
+                                    Text("${i + 1}", color = uiAccent, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(22.dp))
                                     Column(
                                         Modifier.weight(1f).clickable { play(playlist.songs, i) },
                                         verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -290,7 +280,7 @@ private fun PlayerApp(context: Context, player: ExoPlayer) {
                                             message = "Nummer verwijderd"
                                         },
                                         contentPadding = PaddingValues(horizontal = 5.dp)
-                                    ) { Text("×", color = Pink, fontSize = 20.sp) }
+                                    ) { Text("×", color = uiAccentAlt, fontSize = 20.sp) }
                                 }
                             }
                         }
@@ -308,14 +298,14 @@ private fun PlayerApp(context: Context, player: ExoPlayer) {
                                         .clickable { selected = i }.padding(14.dp),
                                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
-                                    Box(Modifier.size(54.dp).clip(RoundedCornerShape(14.dp)).background(Brush.linearGradient(listOf(Purple.copy(alpha = .8f), Pink.copy(alpha = .6f)))), contentAlignment = Alignment.Center) {
+                                    Box(Modifier.size(54.dp).clip(RoundedCornerShape(14.dp)).background(Brush.linearGradient(listOf(uiAccent.copy(alpha = .8f), uiAccentAlt.copy(alpha = .6f)))), contentAlignment = Alignment.Center) {
                                         Text("♫", color = Color.White, fontSize = 27.sp)
                                     }
                                     Column(Modifier.weight(1f)) {
                                         Text(playlist.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                                         Text("${playlist.songs.size} nummers", color = Muted, fontSize = 12.sp)
                                     }
-                                    TextButton(onClick = { selected = i; play(playlist.songs, 0) }, enabled = playlist.songs.isNotEmpty()) { Text("▶", color = Purple, fontSize = 20.sp) }
+                                    TextButton(onClick = { selected = i; play(playlist.songs, 0) }, enabled = playlist.songs.isNotEmpty()) { Text("▶", color = uiAccent, fontSize = 20.sp) }
                                 }
                             }
                         }
@@ -332,7 +322,7 @@ private fun PlayerApp(context: Context, player: ExoPlayer) {
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Box(Modifier.size(174.dp).clip(RoundedCornerShape(34.dp)).background(Brush.linearGradient(listOf(Purple, Color(0xFF4D2D91), Pink))), contentAlignment = Alignment.Center) {
+                        Box(Modifier.size(174.dp).clip(RoundedCornerShape(34.dp)).background(Brush.linearGradient(listOf(uiAccent, Color(0xFF4D2D91), uiAccentAlt))), contentAlignment = Alignment.Center) {
                             Text("♫", color = Color.White, fontSize = 100.sp, fontWeight = FontWeight.Light)
                         }
                         Text("SPOTLIGHT", color = Color.White.copy(alpha = .6f), fontSize = 10.sp, letterSpacing = 4.sp)
@@ -352,69 +342,111 @@ private fun PlayerApp(context: Context, player: ExoPlayer) {
                         kotlinx.coroutines.delay(400)
                     }
                 }
-                Slider(value = position.coerceIn(0f, 1f), onValueChange = { position = it; if (duration > 0) player.seekTo((duration * it).toLong()) }, colors = SliderDefaults.colors(thumbColor = Pink, activeTrackColor = Purple, inactiveTrackColor = Panel2))
+                Slider(value = position.coerceIn(0f, 1f), onValueChange = { position = it; if (duration > 0) player.seekTo((duration * it).toLong()) }, colors = SliderDefaults.colors(thumbColor = uiAccentAlt, activeTrackColor = uiAccent, inactiveTrackColor = Panel2))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(timeText(player.currentPosition), color = Muted, fontSize = 10.sp)
                     Text(timeText(if (player.duration > 0) player.duration else duration), color = Muted, fontSize = 10.sp)
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = { shuffle = !shuffle; player.shuffleModeEnabled = shuffle }) { Text("⤨", color = if (shuffle) Pink else Muted, fontSize = 22.sp) }
+                    TextButton(onClick = { shuffle = !shuffle; player.shuffleModeEnabled = shuffle }) { Text("⤨", color = if (shuffle) uiAccentAlt else Muted, fontSize = 22.sp) }
                     TextButton(onClick = { player.seekToPreviousMediaItem(); currentTitle = player.mediaMetadata.title?.toString() ?: currentTitle }) { Text("◀◀", color = Color.White, fontSize = 19.sp) }
-                    Box(Modifier.size(66.dp).clip(CircleShape).background(Brush.linearGradient(listOf(Purple, Pink))).clickable {
+                    Box(Modifier.size(66.dp).clip(CircleShape).background(Brush.linearGradient(listOf(uiAccent, uiAccentAlt))).clickable {
                         if (player.isPlaying) { player.pause(); playing = false } else { player.play(); playing = true }
                         currentTitle = player.mediaMetadata.title?.toString() ?: currentTitle
                     }, contentAlignment = Alignment.Center) { Text(if (playing) "Ⅱ" else "▶", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold) }
                     TextButton(onClick = { player.seekToNextMediaItem(); currentTitle = player.mediaMetadata.title?.toString() ?: currentTitle }) { Text("▶▶", color = Color.White, fontSize = 19.sp) }
-                    TextButton(onClick = { repeat = !repeat; player.repeatMode = if (repeat) ExoPlayer.REPEAT_MODE_ONE else ExoPlayer.REPEAT_MODE_OFF }) { Text("⟳", color = if (repeat) Pink else Muted, fontSize = 22.sp) }
+                    TextButton(onClick = { repeat = !repeat; player.repeatMode = if (repeat) ExoPlayer.REPEAT_MODE_ONE else ExoPlayer.REPEAT_MODE_OFF }) { Text("⟳", color = if (repeat) uiAccentAlt else Muted, fontSize = 22.sp) }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
                     Text("Snelheid", color = Muted, fontSize = 11.sp)
                     Spacer(Modifier.width(8.dp))
                     listOf(0.75f, 1f, 1.25f, 1.5f, 2f).forEach { value ->
                         TextButton(onClick = { speed = value; player.setPlaybackSpeed(value) }, contentPadding = PaddingValues(horizontal = 5.dp)) {
-                            Text("${value}x", color = if (speed == value) Pink else Muted, fontSize = 11.sp, fontWeight = if (speed == value) FontWeight.Bold else FontWeight.Normal)
+                            Text("${value}x", color = if (speed == value) uiAccentAlt else Muted, fontSize = 11.sp, fontWeight = if (speed == value) FontWeight.Bold else FontWeight.Normal)
                         }
                     }
                 }
             }
             2 -> {
-                Text("ONTDEK MUZIEK", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
-                Text("YouTube", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
-                EmptyCard("Zoek en open muziek", "Plak een YouTube-link hieronder. YouTube-video's worden niet rechtstreeks in deze speler afgespeeld.")
-                OutlinedTextField(youtubeUrl, { youtubeUrl = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Plak YouTube- of audio-link") }, singleLine = true, shape = RoundedCornerShape(14.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = {
-                        if (youtubeUrl.startsWith("https://") || youtubeUrl.startsWith("http://")) {
-                            try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(youtubeUrl))) }
-                            catch (_: Exception) { message = "Kon de link niet openen." }
-                        } else message = "Vul een geldige link in."
-                    }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(14.dp)) { Text("Open link ↗") }
-                    OutlinedButton(onClick = { downloadAudio(youtubeUrl) }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(14.dp)) { Text("↓ Download") }
-                }
+                Text("JOUW COLLECTIE", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
+                Text("Downloads", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
+                EmptyCard("Geen linkjes meer", "Hou het simpel: voeg muziek toe vanaf je telefoon en beheer alles in je playlists. Bestanden die al in Downloads staan kun je hieronder kiezen.")
+                Button(
+                    onClick = { tab = 0; picker.launch(arrayOf("audio/*")) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp)
+                ) { Text("＋ Muziek kiezen van telefoon") }
+                Text("Tip: bestanden die je downloadt vind je in de app Mijn bestanden > Downloads.", color = Muted, fontSize = 12.sp)
                 Spacer(Modifier.weight(1f))
             }
             else -> {
-                Text("JOUW COLLECTIE", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
-                Text("Downloads", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
-                EmptyCard("Download audio", "Plak een directe link naar een audiobestand. Het bestand wordt opgeslagen in de map Downloads van je telefoon. YouTube-links zijn geen directe audiobestanden.")
-                OutlinedTextField(link, { link = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Link naar audiobestand") }, singleLine = true, shape = RoundedCornerShape(14.dp))
-                Button(onClick = { downloadAudio(link); if (link.startsWith("http") && !link.contains("youtube.com") && !link.contains("youtu.be")) link = "" }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) { Text("↓ Download naar Mijn bestanden") }
-                Button(onClick = { tab = 0; picker.launch(arrayOf("audio/*")) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) { Text("Kies audio van telefoon") }
+                Text("MAAK HET VAN JOU", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
+                Text("UI-instellingen", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
+                EmptyCard("Jouw stijl", "Pas de accentkleur en de weergave van je muziek aan. Je keuzes worden op deze telefoon bewaard.")
+                Text("KLEURTHEMA", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("Paars", "Blauw", "Groen", "Oranje").forEachIndexed { index, label ->
+                        Row(
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
+                                .background(if (accentIndex == index) Panel2 else Panel)
+                                .clickable {
+                                    accentIndex = index
+                                    prefs.edit().putInt("accent", index).apply()
+                                }.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(Modifier.size(30.dp).clip(CircleShape).background(
+                                Brush.linearGradient(listOf(accentOptions[index], accentAltOptions[index]))
+                            ))
+                            Text(label, color = Color.White, modifier = Modifier.weight(1f), fontWeight = if (accentIndex == index) FontWeight.Bold else FontWeight.Normal)
+                            if (accentIndex == index) Text("✓", color = accentOptions[index], fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+                HorizontalDivider(color = Panel2)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Compacte playlist", color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Text("Meer nummers tegelijk in beeld", color = Muted, fontSize = 11.sp)
+                    }
+                    Switch(checked = compactRows, onCheckedChange = {
+                        compactRows = it
+                        prefs.edit().putBoolean("compactRows", it).apply()
+                    })
+                }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Mini-speler onderaan", color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Text("Bediening zichtbaar in andere tabbladen", color = Muted, fontSize = 11.sp)
+                    }
+                    Switch(checked = showMiniPlayer, onCheckedChange = {
+                        showMiniPlayer = it
+                        prefs.edit().putBoolean("miniPlayer", it).apply()
+                    })
+                }
+                OutlinedButton(onClick = {
+                    accentIndex = 0
+                    compactRows = false
+                    showMiniPlayer = true
+                    prefs.edit().putInt("accent", 0).putBoolean("compactRows", false).putBoolean("miniPlayer", true).apply()
+                    message = "Standaardinstellingen hersteld"
+                }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) { Text("Herstel standaardinstellingen") }
                 Spacer(Modifier.weight(1f))
             }
         }
         if (message.isNotBlank()) Text(message, color = Muted, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        if (tab != 1) {
+        if (tab != 1 && showMiniPlayer) {
             Row(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Brush.horizontalGradient(listOf(Color(0xFF2A1C43), Panel))).clickable { tab = 1 }.padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Box(Modifier.size(42.dp).clip(RoundedCornerShape(12.dp)).background(Brush.linearGradient(listOf(Purple, Pink))), contentAlignment = Alignment.Center) { Text("♫", color = Color.White, fontSize = 24.sp) }
+                Box(Modifier.size(42.dp).clip(RoundedCornerShape(12.dp)).background(Brush.linearGradient(listOf(uiAccent, uiAccentAlt))), contentAlignment = Alignment.Center) { Text("♫", color = Color.White, fontSize = 24.sp) }
                 Column(Modifier.weight(1f)) {
                     Text(currentTitle, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text("Tik om speler te openen", color = Muted, fontSize = 10.sp)
                 }
-                TextButton(onClick = { if (player.isPlaying) { player.pause(); playing = false } else { player.play(); playing = true } }) { Text(if (playing) "Ⅱ" else "▶", color = Pink, fontSize = 21.sp) }
+                TextButton(onClick = { if (player.isPlaying) { player.pause(); playing = false } else { player.play(); playing = true } }) { Text(if (playing) "Ⅱ" else "▶", color = uiAccentAlt, fontSize = 21.sp) }
             }
         }
         Spacer(Modifier.height(8.dp))

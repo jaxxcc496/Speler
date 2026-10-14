@@ -98,6 +98,7 @@ private fun PlayerApp(context: Context, player: ExoPlayer) {
     var speed by remember { mutableFloatStateOf(1f) }
     var position by remember { mutableFloatStateOf(0f) }
     var duration by remember { mutableLongStateOf(0L) }
+    var playerRevision by remember { mutableIntStateOf(0) }
 
     fun save() {
         val a = JSONArray()
@@ -140,6 +141,7 @@ private fun PlayerApp(context: Context, player: ExoPlayer) {
         position = 0f
         duration = 0L
         tab = 1
+        playerRevision++
     }
     fun downloadAudio(urlText: String) {
         val url = urlText.trim()
@@ -338,6 +340,18 @@ private fun PlayerApp(context: Context, player: ExoPlayer) {
                 }
                 Text(currentTitle, color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(if (currentUri.startsWith("http")) "Online audio" else "Lokale muziekbibliotheek", color = Muted, fontSize = 12.sp)
+                LaunchedEffect(player, playerRevision) {
+                    while (true) {
+                        val d = player.duration
+                        if (d > 0 && d != androidx.media3.common.C.TIME_UNSET) {
+                            duration = d
+                            position = (player.currentPosition.toFloat() / d.toFloat()).coerceIn(0f, 1f)
+                            currentTitle = player.mediaMetadata.title?.toString() ?: currentTitle
+                            playing = player.isPlaying
+                        }
+                        kotlinx.coroutines.delay(400)
+                    }
+                }
                 Slider(value = position.coerceIn(0f, 1f), onValueChange = { position = it; if (duration > 0) player.seekTo((duration * it).toLong()) }, colors = SliderDefaults.colors(thumbColor = Pink, activeTrackColor = Purple, inactiveTrackColor = Panel2))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(timeText(player.currentPosition), color = Muted, fontSize = 10.sp)

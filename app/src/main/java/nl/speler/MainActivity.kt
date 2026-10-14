@@ -1,9 +1,11 @@
 package nl.speler
 
+import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import android.provider.OpenableColumns
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -128,6 +130,35 @@ private fun PlayerApp(context: Context, player: ExoPlayer) {
         duration = 0L
         tab = 1
     }
+    fun downloadAudio(urlText: String) {
+        val url = urlText.trim()
+        if (!(url.startsWith("https://") || url.startsWith("http://"))) {
+            message = "Plak eerst een geldige HTTP(S)-link."
+            return
+        }
+        if (url.contains("youtube.com") || url.contains("youtu.be")) {
+            message = "YouTube-video's kunnen niet rechtstreeks via deze knop als audiobestand worden gedownload. Gebruik een directe link naar een audio bestand waarvoor je toestemming hebt."
+            return
+        }
+        try {
+            val uri = Uri.parse(url)
+            var filename = uri.lastPathSegment?.substringBefore('?')?.takeIf { it.isNotBlank() } ?: "speler-audio"
+            filename = filename.replace(Regex("[^A-Za-z0-9._ -]"), "_").take(120)
+            val request = DownloadManager.Request(uri)
+                .setTitle(filename)
+                .setDescription("Gedownload met Speler")
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
+                .setAllowedOverMetered(true)
+                .setAllowedOverRoaming(false)
+            val manager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+            manager.enqueue(request)
+            message = "Download gestart. Je vindt het bestand straks in Mijn bestanden > Downloads."
+        } catch (_: Exception) {
+            message = "Download niet gestart. Controleer de link en probeer opnieuw."
+        }
+    }
+
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         add(uris.map { uri ->
             try { context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) } catch (_: Exception) {}
@@ -258,27 +289,24 @@ private fun PlayerApp(context: Context, player: ExoPlayer) {
                 Text("ONTDEK MUZIEK", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
                 Text("YouTube", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
                 EmptyCard("Zoek en open muziek", "Plak een YouTube-link hieronder. YouTube-video's worden niet rechtstreeks in deze speler afgespeeld.")
-                OutlinedTextField(youtubeUrl, { youtubeUrl = it }, modifier = Modifier.fillMaxWidth(), label = { Text("YouTube-link") }, singleLine = true, shape = RoundedCornerShape(14.dp))
-                Button(onClick = {
-                    if (youtubeUrl.startsWith("https://") || youtubeUrl.startsWith("http://")) {
-                        try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(youtubeUrl))) }
-                        catch (_: Exception) { message = "Kon de link niet openen." }
-                    } else message = "Vul een geldige YouTube-link in."
-                }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) { Text("Open in YouTube ↗") }
+                OutlinedTextField(youtubeUrl, { youtubeUrl = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Plak YouTube- of audio-link") }, singleLine = true, shape = RoundedCornerShape(14.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = {
+                        if (youtubeUrl.startsWith("https://") || youtubeUrl.startsWith("http://")) {
+                            try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(youtubeUrl))) }
+                            catch (_: Exception) { message = "Kon de link niet openen." }
+                        } else message = "Vul een geldige link in."
+                    }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(14.dp)) { Text("Open link ↗") }
+                    OutlinedButton(onClick = { downloadAudio(youtubeUrl) }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(14.dp)) { Text("↓ Download") }
+                }
                 Spacer(Modifier.weight(1f))
             }
             else -> {
                 Text("JOUW COLLECTIE", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
                 Text("Downloads", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
-                EmptyCard("Voeg audio toe", "Kies lokale audiobestanden of voeg een directe link naar een audiobestand toe. YouTube-links zijn geen directe audiobestanden.")
-                OutlinedTextField(link, { link = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Directe audio-URL") }, singleLine = true, shape = RoundedCornerShape(14.dp))
-                Button(onClick = {
-                    val url = link.trim()
-                    if (selected !in playlists.indices) message = "Ga naar Bibliotheek en selecteer eerst een playlist."
-                    else if ((url.startsWith("https://") || url.startsWith("http://")) && !url.contains("youtube.com") && !url.contains("youtu.be")) {
-                        add(listOf(Song(url.substringAfterLast('/').substringBefore('?').ifBlank { "Online audio" }, url))); link = ""
-                    } else message = "Vul een directe HTTP(S)-audio-URL in."
-                }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) { Text("＋ Toevoegen aan playlist") }
+                EmptyCard("Download audio", "Plak een directe link naar een audiobestand. Het bestand wordt opgeslagen in de map Downloads van je telefoon. YouTube-links zijn geen directe audiobestanden.")
+                OutlinedTextField(link, { link = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Link naar audiobestand") }, singleLine = true, shape = RoundedCornerShape(14.dp))
+                Button(onClick = { downloadAudio(link); if (link.startsWith("http") && !link.contains("youtube.com") && !link.contains("youtu.be")) link = "" }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) { Text("↓ Download naar Mijn bestanden") }
                 Button(onClick = { tab = 0; picker.launch(arrayOf("audio/*")) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) { Text("Kies audio van telefoon") }
                 Spacer(Modifier.weight(1f))
             }

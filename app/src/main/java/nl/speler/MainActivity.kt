@@ -113,12 +113,29 @@ private fun PlayerApp(context: Context, player: Player) {
     } catch (_: Exception) { emptyList() }
 
     val playlists = remember { mutableStateListOf<Playlist>().apply { addAll(loadLists()) } }
+    fun loadCustomTabs(): List<CustomTab> = try {
+        val a = JSONArray(prefs.getString("customTabs", "[]"))
+        (0 until a.length()).map { i ->
+            val t = a.getJSONObject(i)
+            val cardsJson = t.optJSONArray("cards") ?: JSONArray()
+            CustomTab(t.getString("name"), (0 until cardsJson.length()).map { j ->
+                val c = cardsJson.getJSONObject(j)
+                CustomCard(c.optString("title", "Nieuw item"), c.optString("description", ""))
+            })
+        }
+    } catch (_: Exception) { emptyList() }
+    val customTabs = remember { mutableStateListOf<CustomTab>().apply { addAll(loadCustomTabs()) } }
     var selected by remember { mutableIntStateOf(-1) }
     var tab by remember { mutableIntStateOf(0) }
     var currentTitle by remember { mutableStateOf("Kies een nummer") }
     var currentUri by remember { mutableStateOf("") }
     var playing by remember { mutableStateOf(false) }
     var newName by remember { mutableStateOf("") }
+    var newTabName by remember { mutableStateOf("") }
+    var newCardTitle by remember { mutableStateOf("") }
+    var newCardDescription by remember { mutableStateOf("") }
+    var sleepTimerMinutes by remember { mutableIntStateOf(prefs.getInt("sleepTimerMinutes", 0)) }
+    var sleepTimerRunning by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf("Welkom terug") }
     var shuffle by remember { mutableStateOf(false) }
     var repeat by remember { mutableStateOf(false) }
@@ -143,6 +160,15 @@ private fun PlayerApp(context: Context, player: Player) {
             a.put(JSONObject().put("name", p.name).put("songs", songs))
         }
         prefs.edit().putString("playlists", a.toString()).apply()
+    }
+    fun saveCustomTabs() {
+        val a = JSONArray()
+        customTabs.forEach { t ->
+            val cards = JSONArray()
+            t.cards.forEach { c -> cards.put(JSONObject().put("title", c.title).put("description", c.description)) }
+            a.put(JSONObject().put("name", t.name).put("cards", cards))
+        }
+        prefs.edit().putString("customTabs", a.toString()).apply()
     }
     fun add(songs: List<Song>) {
         if (selected !in playlists.indices) { message = "Maak eerst een playlist."; return }
@@ -203,12 +229,12 @@ private fun PlayerApp(context: Context, player: Player) {
             }
         }
 
-        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color(0xAA171426)).padding(4.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-            listOf("Bibliotheek", "Speler", "Downloads", "Instellingen").forEachIndexed { i, label ->
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).clip(RoundedCornerShape(16.dp)).background(Color(0xAA171426)).padding(4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            (listOf("Bibliotheek", "Speler", "Downloads", "Instellingen") + customTabs.map { it.name }).forEachIndexed { i, label ->
                 Box(
-                    Modifier.weight(1f).clip(RoundedCornerShape(12.dp))
+                    Modifier.widthIn(min = 76.dp).clip(RoundedCornerShape(12.dp))
                         .background(if (tab == i) Brush.linearGradient(listOf(uiAccent, Color(0xFF7343D6))) else Brush.linearGradient(listOf(Panel, Panel)))
-                        .clickable { tab = i }.padding(vertical = 12.dp),
+                        .clickable { tab = i }.padding(horizontal = 10.dp, vertical = 12.dp),
                     contentAlignment = Alignment.Center
                 ) { Text(label, color = if (tab == i) Color.White else Muted, fontSize = 10.sp, fontWeight = if (tab == i) FontWeight.Bold else FontWeight.Medium, maxLines = 1) }
             }

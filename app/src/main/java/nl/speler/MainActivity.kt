@@ -113,6 +113,17 @@ private fun PlayerApp(context: Context, player: ExoPlayer) {
         playlists[selected] = playlists[selected].copy(songs = playlists[selected].songs + songs)
         save(); message = "${songs.size} nummer(s) toegevoegd aan ${playlists[selected].name}"
     }
+
+    fun moveSong(from: Int, to: Int) {
+        if (selected !in playlists.indices) return
+        val songs = playlists[selected].songs.toMutableList()
+        if (from !in songs.indices || to !in songs.indices) return
+        val moved = songs.removeAt(from)
+        songs.add(to, moved)
+        playlists[selected] = playlists[selected].copy(songs = songs)
+        save()
+        message = "Volgorde aangepast"
+    }
     fun play(songs: List<Song>, index: Int) {
         if (songs.isEmpty()) return
         val safeIndex = index.coerceIn(songs.indices)
@@ -217,26 +228,93 @@ private fun PlayerApp(context: Context, player: ExoPlayer) {
                     Button(onClick = { picker.launch(arrayOf("audio/*")) }, enabled = selected in playlists.indices, shape = RoundedCornerShape(12.dp)) { Text("＋ Audio toevoegen", fontSize = 12.sp) }
                     OutlinedButton(onClick = { tab = 3 }, shape = RoundedCornerShape(12.dp)) { Text("↓ Downloads", fontSize = 12.sp) }
                 }
-                Text("JOUW PLAYLISTS", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
-                if (playlists.isEmpty()) {
-                    EmptyCard("Nog geen playlists", "Maak hierboven een playlist om te beginnen.")
+                if (selected in playlists.indices) {
+                    val playlist = playlists[selected]
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = { selected = -1 }) { Text("← Playlists") }
+                        Column(Modifier.weight(1f)) {
+                            Text(playlist.name, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                            Text("${playlist.songs.size} nummers", color = Muted, fontSize = 11.sp)
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = { picker.launch(arrayOf("audio/*")) }, shape = RoundedCornerShape(12.dp)) { Text("＋ Nummer toevoegen", fontSize = 12.sp) }
+                        OutlinedButton(
+                            onClick = {
+                                playlists.removeAt(selected)
+                                selected = -1
+                                save()
+                                message = "Playlist verwijderd"
+                            },
+                            shape = RoundedCornerShape(12.dp)
+                        ) { Text("Verwijder") }
+                    }
+                    if (playlist.songs.isEmpty()) {
+                        EmptyCard("Playlist is leeg", "Voeg je eigen audiobestanden toe om ze hier te zien.")
+                    } else {
+                        Text("NUMMERS IN DEZE PLAYLIST", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
+                        LazyColumn(
+                            Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            itemsIndexed(playlist.songs) { i, song ->
+                                Row(
+                                    Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Panel).padding(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text("${i + 1}", color = Purple, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(22.dp))
+                                    Column(
+                                        Modifier.weight(1f).clickable { play(playlist.songs, i) },
+                                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                                    ) {
+                                        Text(song.title, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text("Tik om af te spelen", color = Muted, fontSize = 10.sp)
+                                    }
+                                    TextButton(
+                                        onClick = { moveSong(i, i - 1) },
+                                        enabled = i > 0,
+                                        contentPadding = PaddingValues(horizontal = 6.dp)
+                                    ) { Text("↑", color = if (i > 0) Color.White else Muted, fontSize = 20.sp) }
+                                    TextButton(
+                                        onClick = { moveSong(i, i + 1) },
+                                        enabled = i < playlist.songs.lastIndex,
+                                        contentPadding = PaddingValues(horizontal = 6.dp)
+                                    ) { Text("↓", color = if (i < playlist.songs.lastIndex) Color.White else Muted, fontSize = 20.sp) }
+                                    TextButton(
+                                        onClick = {
+                                            playlists[selected] = playlist.copy(songs = playlist.songs.filterIndexed { j, _ -> j != i })
+                                            save()
+                                            message = "Nummer verwijderd"
+                                        },
+                                        contentPadding = PaddingValues(horizontal = 5.dp)
+                                    ) { Text("×", color = Pink, fontSize = 20.sp) }
+                                }
+                            }
+                        }
+                    }
                 } else {
-                    LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        itemsIndexed(playlists) { i, playlist ->
-                            Row(
-                                Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp))
-                                    .background(if (selected == i) Brush.horizontalGradient(listOf(Color(0xFF33204F), Panel)) else Brush.horizontalGradient(listOf(Panel, Panel)))
-                                    .clickable { selected = i }.padding(14.dp),
-                                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Box(Modifier.size(54.dp).clip(RoundedCornerShape(14.dp)).background(Brush.linearGradient(listOf(Purple.copy(alpha = .8f), Pink.copy(alpha = .6f)))), contentAlignment = Alignment.Center) {
-                                    Text("♫", color = Color.White, fontSize = 27.sp)
+                    Text("JOUW PLAYLISTS", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
+                    if (playlists.isEmpty()) {
+                        EmptyCard("Nog geen playlists", "Maak hierboven een playlist om te beginnen.")
+                    } else {
+                        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            itemsIndexed(playlists) { i, playlist ->
+                                Row(
+                                    Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp))
+                                        .background(Brush.horizontalGradient(listOf(Panel, Panel)))
+                                        .clickable { selected = i }.padding(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Box(Modifier.size(54.dp).clip(RoundedCornerShape(14.dp)).background(Brush.linearGradient(listOf(Purple.copy(alpha = .8f), Pink.copy(alpha = .6f)))), contentAlignment = Alignment.Center) {
+                                        Text("♫", color = Color.White, fontSize = 27.sp)
+                                    }
+                                    Column(Modifier.weight(1f)) {
+                                        Text(playlist.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                        Text("${playlist.songs.size} nummers", color = Muted, fontSize = 12.sp)
+                                    }
+                                    TextButton(onClick = { selected = i; play(playlist.songs, 0) }, enabled = playlist.songs.isNotEmpty()) { Text("▶", color = Purple, fontSize = 20.sp) }
                                 }
-                                Column(Modifier.weight(1f)) {
-                                    Text(playlist.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                                    Text("${playlist.songs.size} nummers", color = Muted, fontSize = 12.sp)
-                                }
-                                TextButton(onClick = { selected = i; play(playlist.songs, 0) }, enabled = playlist.songs.isNotEmpty()) { Text("▶", color = Purple, fontSize = 20.sp) }
                             }
                         }
                     }

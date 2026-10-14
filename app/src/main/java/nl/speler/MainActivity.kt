@@ -412,6 +412,15 @@ private fun PlayerApp(context: Context, player: Player) {
                         currentTitle = player.mediaMetadata.title?.toString() ?: currentTitle
                     }, contentAlignment = Alignment.Center) { Text(if (playing) "Ⅱ" else "▶", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold) }
                     TextButton(onClick = { player.seekToNextMediaItem(); currentTitle = player.mediaMetadata.title?.toString() ?: currentTitle }) { Text("▶▶", color = Color.White, fontSize = 19.sp) }
+                    TextButton(onClick = {
+                        player.pause()
+                        player.stop()
+                        playing = false
+                        position = 0f
+                        duration = 0L
+                        currentTitle = "Kies een nummer"
+                        currentUri = ""
+                    }) { Text("■", color = uiAccentAlt, fontSize = 18.sp) }
                     TextButton(onClick = { repeat = !repeat; player.repeatMode = if (repeat) ExoPlayer.REPEAT_MODE_ONE else ExoPlayer.REPEAT_MODE_OFF }) { Text("⟳", color = if (repeat) uiAccentAlt else Muted, fontSize = 22.sp) }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
@@ -436,7 +445,7 @@ private fun PlayerApp(context: Context, player: Player) {
                 Text("Tip: bestanden die je downloadt vind je in de app Mijn bestanden > Downloads.", color = Muted, fontSize = 12.sp)
                 Spacer(Modifier.weight(1f))
             }
-            else -> {
+            3 -> {
                 Text("MAAK HET VAN JOU", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
                 Text("UI-instellingen", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
                 EmptyCard("Jouw stijl", "Pas de accentkleur en de weergave van je muziek aan. Je keuzes worden op deze telefoon bewaard.")
@@ -453,9 +462,7 @@ private fun PlayerApp(context: Context, player: Player) {
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Box(Modifier.size(30.dp).clip(CircleShape).background(
-                                Brush.linearGradient(listOf(accentOptions[index], accentAltOptions[index]))
-                            ))
+                            Box(Modifier.size(30.dp).clip(CircleShape).background(Brush.linearGradient(listOf(accentOptions[index], accentAltOptions[index]))))
                             Text(label, color = Color.White, modifier = Modifier.weight(1f), fontWeight = if (accentIndex == index) FontWeight.Bold else FontWeight.Normal)
                             if (accentIndex == index) Text("✓", color = accentOptions[index], fontSize = 20.sp, fontWeight = FontWeight.Bold)
                         }
@@ -475,21 +482,168 @@ private fun PlayerApp(context: Context, player: Player) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text("Mini-speler onderaan", color = Color.White, fontWeight = FontWeight.SemiBold)
-                        Text("Bediening zichtbaar in andere tabbladen", color = Muted, fontSize = 11.sp)
+                        Text("Bediening in andere tabbladen", color = Muted, fontSize = 11.sp)
                     }
                     Switch(checked = showMiniPlayer, onCheckedChange = {
                         showMiniPlayer = it
                         prefs.edit().putBoolean("miniPlayer", it).apply()
                     })
                 }
+                HorizontalDivider(color = Panel2)
+                Text("SLAAPTIMER", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
+                Text("Stop muziek automatisch", color = Color.White, fontWeight = FontWeight.SemiBold)
+                Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
+                    listOf(0, 15, 30, 60).forEach { minutes ->
+                        FilterChip(
+                            selected = sleepTimerMinutes == minutes,
+                            onClick = {
+                                sleepTimerMinutes = minutes
+                                sleepTimerRunning = false
+                                prefs.edit().putInt("sleepTimerMinutes", minutes).apply()
+                            },
+                            label = { Text(if (minutes == 0) "Uit" else "$minutes min") }
+                        )
+                    }
+                }
+                Button(
+                    onClick = {
+                        if (sleepTimerMinutes > 0) {
+                            sleepTimerRunning = true
+                            message = "Muziek stopt over $sleepTimerMinutes minuten"
+                        } else message = "Kies eerst een tijd"
+                    },
+                    enabled = sleepTimerMinutes > 0,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) { Text(if (sleepTimerRunning) "Timer opnieuw starten" else "Start slaaptimer") }
+                if (sleepTimerRunning) {
+                    TextButton(onClick = { sleepTimerRunning = false; message = "Slaaptimer geannuleerd" }) { Text("Timer annuleren") }
+                }
+                LaunchedEffect(sleepTimerRunning, sleepTimerMinutes) {
+                    if (sleepTimerRunning && sleepTimerMinutes > 0) {
+                        kotlinx.coroutines.delay(sleepTimerMinutes * 60_000L)
+                        player.pause()
+                        player.stop()
+                        playing = false
+                        sleepTimerRunning = false
+                        currentTitle = "Kies een nummer"
+                        currentUri = ""
+                        message = "Slaaptimer: muziek gestopt"
+                    }
+                }
+                HorizontalDivider(color = Panel2)
+                Text("EIGEN TABBLADEN", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
+                Text("Maak eigen pagina's met notities en kaartjes.", color = Color.White, fontSize = 12.sp)
+                OutlinedTextField(
+                    value = newTabName,
+                    onValueChange = { newTabName = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Naam nieuw tabblad") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(14.dp)
+                )
+                Button(
+                    onClick = {
+                        val name = newTabName.trim()
+                        val names = listOf("Bibliotheek", "Speler", "Downloads", "Instellingen") + customTabs.map { it.name }
+                        if (name.isNotBlank() && names.none { it.equals(name, true) }) {
+                            customTabs.add(CustomTab(name, emptyList()))
+                            saveCustomTabs()
+                            newTabName = ""
+                            tab = 4 + customTabs.lastIndex
+                            message = "Eigen tabblad aangemaakt"
+                        } else message = "Kies een unieke naam voor het tabblad"
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) { Text("＋ Tabblad toevoegen") }
+                if (customTabs.isNotEmpty()) {
+                    Text("${customTabs.size} eigen tabblad(en) • tik bovenaan om ze te openen", color = Muted, fontSize = 11.sp)
+                }
                 OutlinedButton(onClick = {
                     accentIndex = 0
                     compactRows = false
                     showMiniPlayer = true
-                    prefs.edit().putInt("accent", 0).putBoolean("compactRows", false).putBoolean("miniPlayer", true).apply()
+                    sleepTimerMinutes = 0
+                    sleepTimerRunning = false
+                    prefs.edit().putInt("accent", 0).putBoolean("compactRows", false).putBoolean("miniPlayer", true).putInt("sleepTimerMinutes", 0).apply()
                     message = "Standaardinstellingen hersteld"
                 }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) { Text("Herstel standaardinstellingen") }
                 Spacer(Modifier.weight(1f))
+            }
+            else -> {
+                val customIndex = tab - 4
+                if (customIndex in customTabs.indices) {
+                    val customTab = customTabs[customIndex]
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("JOUW EIGEN RUIMTE", color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
+                            Text(customTab.name, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                        }
+                        TextButton(onClick = {
+                            customTabs.removeAt(customIndex)
+                            saveCustomTabs()
+                            tab = 3
+                            message = "Eigen tabblad verwijderd"
+                        }) { Text("Verwijder tab", color = uiAccentAlt, fontSize = 11.sp) }
+                    }
+                    OutlinedTextField(
+                        value = newCardTitle,
+                        onValueChange = { newCardTitle = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Naam van je item") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(14.dp)
+                    )
+                    OutlinedTextField(
+                        value = newCardDescription,
+                        onValueChange = { newCardDescription = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Beschrijving of notitie") },
+                        minLines = 2,
+                        maxLines = 4,
+                        shape = RoundedCornerShape(14.dp)
+                    )
+                    Button(
+                        onClick = {
+                            if (newCardTitle.isNotBlank()) {
+                                customTabs[customIndex] = customTab.copy(cards = customTab.cards + CustomCard(newCardTitle.trim(), newCardDescription.trim()))
+                                saveCustomTabs()
+                                newCardTitle = ""
+                                newCardDescription = ""
+                                message = "Item opgeslagen"
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp)
+                    ) { Text("＋ Item maken") }
+                    if (customTab.cards.isEmpty()) {
+                        EmptyCard("Begin met iets maken", "Maak hier notities, ideeën, lijstjes of projectkaartjes.")
+                    } else {
+                        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                            itemsIndexed(customTab.cards) { cardIndex, card ->
+                                Row(
+                                    Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Panel).padding(14.dp),
+                                    verticalAlignment = Alignment.Top,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                                        Text(card.title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                        if (card.description.isNotBlank()) Text(card.description, color = Muted, fontSize = 12.sp)
+                                    }
+                                    TextButton(onClick = {
+                                        customTabs[customIndex] = customTab.copy(cards = customTab.cards.filterIndexed { j, _ -> j != cardIndex })
+                                        saveCustomTabs()
+                                        message = "Item verwijderd"
+                                    }) { Text("×", color = uiAccentAlt, fontSize = 20.sp) }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    Text("Tabblad niet gevonden", color = Color.White, fontSize = 20.sp)
+                    Button(onClick = { tab = 3 }) { Text("Naar instellingen") }
+                }
             }
         }
         if (message.isNotBlank()) Text(message, color = Muted, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)

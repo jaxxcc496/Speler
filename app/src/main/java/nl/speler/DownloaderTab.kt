@@ -104,12 +104,16 @@ fun DownloaderTab(context: Context) {
                             } else {
                                 request.addOption("-f", "best[ext=mp4]/best")
                             }
-                            YoutubeDL.getInstance().execute(request, { percent, eta ->
+                            YoutubeDL.getInstance().execute(request, "speler-downloader") { percent, eta, outputLine ->
                                 mainHandler.post {
                                     progress = (percent / 100f).coerceIn(0f, 1f)
-                                    status = "Downloaden… $percent%  •  resterend: ${eta}s"
+                                    status = if (percent >= 0f) {
+                                        "Downloaden… ${percent.toInt()}%  •  resterend: ${eta}s"
+                                    } else {
+                                        outputLine.takeLast(180).ifBlank { "Downloaden…" }
+                                    }
                                 }
-                            }, "speler-downloader")
+                            }
                             mainHandler.post {
                                 progress = 1f
                                 status = "Klaar! Je bestand staat in Download/Speler."

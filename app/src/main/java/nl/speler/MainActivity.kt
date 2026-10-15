@@ -63,6 +63,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        try {
+            com.yausername.youtubedl_android.YoutubeDL.getInstance().init(applicationContext)
+            com.yausername.ffmpeg.FFmpeg.getInstance().init(applicationContext)
+        } catch (e: Exception) {
+            android.util.Log.e("Speler", "Downloader kon niet worden gestart", e)
+        }
         setContent {
             MaterialTheme(colorScheme = darkColorScheme(primary = Purple, secondary = Pink, background = Bg, surface = Panel)) {
                 Box(Modifier.fillMaxSize().background(Bg), contentAlignment = Alignment.Center) {
@@ -913,29 +919,7 @@ private fun PlayerApp(context: Context, player: Player) {
                 Spacer(Modifier.height(8.dp))
             }
             4 -> {
-                Text(tr("DOWNLOADER"), color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
-                Text(tr("Downloader"), color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
-                Text("Open de Downloader-app die je hebt geüpload.", color = Muted, fontSize = 12.sp)
-                Spacer(Modifier.height(12.dp))
-                Button(
-                    onClick = {
-                        val launchIntent = context.packageManager.getLaunchIntentForPackage("com.tech.downloader.ytmp3")
-                        if (launchIntent != null) {
-                            context.startActivity(launchIntent)
-                        } else {
-                            message = "Downloader is nog niet geïnstalleerd. Installeer eerst het APK-bestand en probeer opnieuw."
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Text("Downloader openen")
-                }
-                Text(
-                    "Let op: de APK wordt niet automatisch in Speler geïnstalleerd. Installeer het APK-bestand eerst apart op je telefoon.",
-                    color = Muted,
-                    fontSize = 12.sp
-                )
+                DownloaderTab(context)
             }
             else -> {
                 val customIndex = tab - 5

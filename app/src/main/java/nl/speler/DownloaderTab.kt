@@ -131,7 +131,7 @@ fun DownloaderTab(context: Context) {
             Text(if (downloading) "Bezig…" else "Download starten")
         }
         if (downloading) {
-            CircularProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+            CircularProgressIndicator(progress = progress)
             Button(
                 onClick = {
                     Thread {

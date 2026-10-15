@@ -7,6 +7,8 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -34,6 +36,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
@@ -498,7 +501,7 @@ private fun PlayerApp(context: Context, player: Player) {
 
     CompositionLocalProvider(LocalLayoutDirection provides if (language == "ar") LayoutDirection.Rtl else LayoutDirection.Ltr) {
     Column(
-        Modifier.fillMaxSize().background(Brush.verticalGradient(backgroundOptions[backgroundIndex])).padding(horizontal = 18.dp).then(if (tab != 1) Modifier.verticalScroll(rememberScrollState()) else Modifier),
+        Modifier.fillMaxSize().background(Brush.verticalGradient(backgroundOptions[backgroundIndex])).padding(horizontal = 18.dp).then(if (tab != 1 && tab != 4) Modifier.verticalScroll(rememberScrollState()) else Modifier),
         verticalArrangement = Arrangement.spacedBy(13.dp)
     ) {
         Spacer(Modifier.height(10.dp))
@@ -516,7 +519,7 @@ private fun PlayerApp(context: Context, player: Player) {
         }
 
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).clip(RoundedCornerShape(16.dp)).background(Color(0xAA171426)).padding(4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            (listOf("Bibliotheek", "Speler", "Downloads", "Instellingen") + customTabs.map { it.name }).forEachIndexed { i, label ->
+            (listOf("Bibliotheek", "Speler", "Downloads", "Instellingen", "Downloader") + customTabs.map { it.name }).forEachIndexed { i, label ->
                 Box(
                     Modifier.widthIn(min = 76.dp).clip(RoundedCornerShape(12.dp))
                         .background(if (tab == i) Brush.linearGradient(listOf(uiAccent, Color(0xFF7343D6))) else Brush.linearGradient(listOf(Panel, Panel)))
@@ -879,12 +882,12 @@ private fun PlayerApp(context: Context, player: Player) {
                 Button(
                     onClick = {
                         val name = newTabName.trim()
-                        val names = listOf("Bibliotheek", "Speler", "Downloads", "Instellingen") + customTabs.map { it.name }
+                        val names = listOf("Bibliotheek", "Speler", "Downloads", "Instellingen", "Downloader") + customTabs.map { it.name }
                         if (name.isNotBlank() && names.none { it.equals(name, true) }) {
                             customTabs.add(CustomTab(name, emptyList()))
                             saveCustomTabs()
                             newTabName = ""
-                            tab = 4 + customTabs.lastIndex
+                            tab = 5 + customTabs.lastIndex
                             message = "Eigen tabblad aangemaakt"
                         } else message = "Kies een unieke naam voor het tabblad"
                     },
@@ -909,8 +912,24 @@ private fun PlayerApp(context: Context, player: Player) {
                 }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) { Text(tr("Herstel standaardinstellingen")) }
                 Spacer(Modifier.height(8.dp))
             }
+            4 -> {
+                Text(tr("DOWNLOADER"), color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
+                Text(tr("Downloader"), color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
+                Text(tr("Open de downloaderwebsite hieronder."), color = Muted, fontSize = 12.sp)
+                AndroidView(
+                    factory = { context ->
+                        WebView(context).apply {
+                            settings.javaScriptEnabled = true
+                            settings.domStorageEnabled = true
+                            webViewClient = WebViewClient()
+                            loadUrl("https://vavel.pl/")
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(520.dp)
+                )
+            }
             else -> {
-                val customIndex = tab - 4
+                val customIndex = tab - 5
                 if (customIndex in customTabs.indices) {
                     val customTab = customTabs[customIndex]
                     Row(verticalAlignment = Alignment.CenterVertically) {

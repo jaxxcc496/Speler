@@ -915,17 +915,26 @@ private fun PlayerApp(context: Context, player: Player) {
             4 -> {
                 Text(tr("DOWNLOADER"), color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
                 Text(tr("Downloader"), color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
-                Text(tr("Open de downloaderwebsite hieronder."), color = Muted, fontSize = 12.sp)
-                AndroidView(
-                    factory = { context ->
-                        WebView(context).apply {
-                            settings.javaScriptEnabled = true
-                            settings.domStorageEnabled = true
-                            webViewClient = WebViewClient()
-                            loadUrl("https://vavel.pl/")
+                Text("Open de Downloader-app die je hebt geüpload.", color = Muted, fontSize = 12.sp)
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = {
+                        val launchIntent = context.packageManager.getLaunchIntentForPackage("com.tech.downloader.ytmp3")
+                        if (launchIntent != null) {
+                            context.startActivity(launchIntent)
+                        } else {
+                            message = "Downloader is nog niet geïnstalleerd. Installeer eerst het APK-bestand en probeer opnieuw."
                         }
                     },
-                    modifier = Modifier.fillMaxWidth().height(520.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Text("Downloader openen")
+                }
+                Text(
+                    "Let op: de APK wordt niet automatisch in Speler geïnstalleerd. Installeer het APK-bestand eerst apart op je telefoon.",
+                    color = Muted,
+                    fontSize = 12.sp
                 )
             }
             else -> {

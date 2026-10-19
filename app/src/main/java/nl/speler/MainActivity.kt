@@ -519,7 +519,7 @@ private fun PlayerApp(context: Context, player: Player) {
         }
 
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).clip(RoundedCornerShape(16.dp)).background(Color(0xAA171426)).padding(4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            (listOf("Bibliotheek", "Speler", "Downloads", "Instellingen") + customTabs.map { it.name }).forEachIndexed { i, label ->
+            (listOf("Bibliotheek", "Speler", "Instellingen") + customTabs.map { it.name }).forEachIndexed { i, label ->
                 Box(
                     Modifier.widthIn(min = 76.dp).clip(RoundedCornerShape(12.dp))
                         .background(if (tab == i) Brush.linearGradient(listOf(uiAccent, Color(0xFF7343D6))) else Brush.linearGradient(listOf(Panel, Panel)))
@@ -549,7 +549,6 @@ private fun PlayerApp(context: Context, player: Player) {
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = { picker.launch(arrayOf("audio/*")) }, enabled = selected in playlists.indices, shape = RoundedCornerShape(12.dp)) { Text(tr("＋ Audio toevoegen"), fontSize = 12.sp) }
-                    OutlinedButton(onClick = { tab = 3 }, shape = RoundedCornerShape(12.dp)) { Text(tr("↓ Downloads"), fontSize = 12.sp) }
                 }
                 if (selected in playlists.indices) {
                     val playlist = playlists[selected]
@@ -723,17 +722,6 @@ private fun PlayerApp(context: Context, player: Player) {
                 }
             }
             2 -> {
-                Text(tr("JOUW COLLECTIE"), color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
-                Text(tr("Downloads"), color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
-                EmptyCard(tr("Geen linkjes meer"), tr("Hou het simpel: voeg muziek toe vanaf je telefoon en beheer alles in je playlists. Bestanden die al in Downloads staan kun je hieronder kiezen."))
-                Button(
-                    onClick = { tab = 0; picker.launch(arrayOf("audio/*")) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp)
-                ) { Text(tr("＋ Muziek kiezen van telefoon")) }
-                Text(tr("Tip: bestanden die je downloadt vind je in de app Mijn bestanden > Downloads."), color = Muted, fontSize = 12.sp)
-            }
-            3 -> {
                 Text(tr("MAAK HET VAN JOU"), color = Muted, fontSize = 10.sp, letterSpacing = 2.sp)
                 Text(tr("UI-instellingen"), color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
                 EmptyCard(tr("Jouw stijl"), tr("Pas de accentkleur en de weergave van je muziek aan. Je keuzes worden op deze telefoon bewaard."))
@@ -882,12 +870,12 @@ private fun PlayerApp(context: Context, player: Player) {
                 Button(
                     onClick = {
                         val name = newTabName.trim()
-                        val names = listOf("Bibliotheek", "Speler", "Downloads", "Instellingen") + customTabs.map { it.name }
+                        val names = listOf("Bibliotheek", "Speler", "Instellingen") + customTabs.map { it.name }
                         if (name.isNotBlank() && names.none { it.equals(name, true) }) {
                             customTabs.add(CustomTab(name, emptyList()))
                             saveCustomTabs()
                             newTabName = ""
-                            tab = 4 + customTabs.lastIndex
+                            tab = 3 + customTabs.lastIndex
                             message = "Eigen tabblad aangemaakt"
                         } else message = "Kies een unieke naam voor het tabblad"
                     },
@@ -913,7 +901,7 @@ private fun PlayerApp(context: Context, player: Player) {
                 Spacer(Modifier.height(8.dp))
             }
             else -> {
-                val customIndex = tab - 4
+                val customIndex = tab - 3
                 if (customIndex in customTabs.indices) {
                     val customTab = customTabs[customIndex]
                     Row(verticalAlignment = Alignment.CenterVertically) {

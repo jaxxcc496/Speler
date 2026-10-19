@@ -63,12 +63,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        try {
-            com.yausername.youtubedl_android.YoutubeDL.getInstance().init(applicationContext)
-            com.yausername.ffmpeg.FFmpeg.getInstance().init(applicationContext)
-        } catch (e: Exception) {
-            android.util.Log.e("Speler", "Downloader kon niet worden gestart", e)
-        }
         setContent {
             MaterialTheme(colorScheme = darkColorScheme(primary = Purple, secondary = Pink, background = Bg, surface = Panel)) {
                 Box(Modifier.fillMaxSize().background(Bg), contentAlignment = Alignment.Center) {
@@ -525,7 +519,7 @@ private fun PlayerApp(context: Context, player: Player) {
         }
 
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).clip(RoundedCornerShape(16.dp)).background(Color(0xAA171426)).padding(4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            (listOf("Bibliotheek", "Speler", "Downloads", "Instellingen", "Downloader") + customTabs.map { it.name }).forEachIndexed { i, label ->
+            (listOf("Bibliotheek", "Speler", "Downloads", "Instellingen") + customTabs.map { it.name }).forEachIndexed { i, label ->
                 Box(
                     Modifier.widthIn(min = 76.dp).clip(RoundedCornerShape(12.dp))
                         .background(if (tab == i) Brush.linearGradient(listOf(uiAccent, Color(0xFF7343D6))) else Brush.linearGradient(listOf(Panel, Panel)))
@@ -888,12 +882,12 @@ private fun PlayerApp(context: Context, player: Player) {
                 Button(
                     onClick = {
                         val name = newTabName.trim()
-                        val names = listOf("Bibliotheek", "Speler", "Downloads", "Instellingen", "Downloader") + customTabs.map { it.name }
+                        val names = listOf("Bibliotheek", "Speler", "Downloads", "Instellingen") + customTabs.map { it.name }
                         if (name.isNotBlank() && names.none { it.equals(name, true) }) {
                             customTabs.add(CustomTab(name, emptyList()))
                             saveCustomTabs()
                             newTabName = ""
-                            tab = 5 + customTabs.lastIndex
+                            tab = 4 + customTabs.lastIndex
                             message = "Eigen tabblad aangemaakt"
                         } else message = "Kies een unieke naam voor het tabblad"
                     },
@@ -918,11 +912,8 @@ private fun PlayerApp(context: Context, player: Player) {
                 }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) { Text(tr("Herstel standaardinstellingen")) }
                 Spacer(Modifier.height(8.dp))
             }
-            4 -> {
-                DownloaderTab(context)
-            }
             else -> {
-                val customIndex = tab - 5
+                val customIndex = tab - 4
                 if (customIndex in customTabs.indices) {
                     val customTab = customTabs[customIndex]
                     Row(verticalAlignment = Alignment.CenterVertically) {
